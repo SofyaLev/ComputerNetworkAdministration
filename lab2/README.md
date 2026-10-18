@@ -221,8 +221,170 @@ ls: cannot access '/home/karina/test.txt': No such file or directory
 
 ---
 
-## 3. Задание 2. [заполним после выполнения]
+## 3. Задание 2.
 
+## 3. Задание 2 (вариант a). Расширение Caddy: своя index.html
+
+### 3.1. Постановка задачи
+
+Требовалось расширить конфигурацию веб-сервера Caddy любым функционалом по желанию. Был выбран вариант **замены дефолтной страницы Caddy на собственную `index.html` с Hello world**, развёртываемую через Ansible.
+
+### 3.2. Структура роли
+
+Роль создана командой `ansible-galaxy init caddy_deploy` и имеет вид:
+
+```text
+roles/caddy_deploy/
+├── tasks/main.yml
+├── handlers/main.yml
+├── templates/Caddyfile.j2
+└── files/index.html
+```
+
+### 3.3. Шаблон Caddyfile (`templates/Caddyfile.j2`)
+
+```caddy
+:80 {
+    root * /var/www/html
+    file_server
+}
+```
+
+### 3.4. Своя страница (`files/index.html`)
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Caddy Page</title>
+</head>
+<body>
+    <h1>Hello world from Karina!</h1>
+    <p>This page was deployed by Ansible.</p>
+</body>
+</html>
+```
+
+### 3.5. Задачи роли (`tasks/main.yml`, ключевые шаги)
+
+Помимо установки Caddy (добавление GPG-ключа и репозитория, `apt install caddy`), роль содержит шаги настройки:
+
+```yaml
+- name: Create config file from template
+  template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+  become: true
+  notify: Reload caddy
+
+- name: Ensure web root directory exists
+  file:
+    path: /var/www/html
+    state: directory
+    mode: '0755'
+  become: true
+
+- name: Copy custom index.html
+  copy:
+    src: index.html
+    dest: /var/www/html/index.html
+  become: true
+
+- name: Ensure caddy is started and enabled
+  service:
+    name: caddy
+    state: started
+    enabled: yes
+  become: true
+```
+
+Handler (`handlers/main.yml`):
+
+```yaml
+- name: Reload caddy
+  service:
+    name: caddy
+    state: reloaded
+  become: true
+```
+
+### 3.6. Основной плейбук (`caddy_deploy.yml`)
+
+```yaml
+---
+- name: Install and configure Caddy webserver
+  hosts: my_servers
+  connection: local
+  become: true
+  become_method: sudo
+  become_exe: /usr/bin/sudo.ws
+  roles:
+    - caddy_deploy
+```
+
+### 3.7. Запуск и результат
+
+```bash
+ansible-playbook caddy_deploy.yml --ask-become-pass
+```
+
+```text
+PLAY RECAP ***
+local_server : ok=10 changed=2 unreachable=0 failed=0 skipped=0 rescued=0 ignored=0
+```
+
+<img width="1122" height="1011" alt="image" src="https://github.com/user-attachments/assets/2b6cc72e-0116-4131-af96-f74183b726a5" />
+
+
+Проверка конфига и файла:
+
+```bash
+cat /etc/caddy/Caddyfile
+ls -la /var/www/html/
+```
+
+```text
+:80 {
+    root * /var/www/html
+    file_server
+}
+
+-rw-r--r-- 1 root root 178 Oct 19 00:48 index.html
+```
+
+<img width="760" height="275" alt="image" src="https://github.com/user-attachments/assets/35082ea8-1cce-4eee-a765-b645da2edb7a" />
+
+
+Проверка отдачи страницы:
+
+```bash
+curl http://localhost
+```
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Caddy Page</title>
+</head>
+<body>
+    <h1>Hello world from Karina!</h1>
+    <p>This page was deployed by Ansible.</p>
+</body>
+</html>
+```
+
+<img width="701" height="265" alt="image" src="https://github.com/user-attachments/assets/4e19ddd4-446a-4369-8e86-2baf938865a6" />
+
+
+Также страница открывается в браузере Windows по адресу `http://localhost` (WSL пробрасывает порт 80 на хост):
+
+<img width="585" height="325" alt="image" src="https://github.com/user-attachments/assets/f2b0ca51-15d5-4c9f-a1d1-30465638ea8c" />
+
+
+### 3.8. Вывод по Заданию 2
+
+Caddy успешно установлен и настроен через Ansible. Дефолтная страница заменена на собственную `index.html`, которая раздаётся из `/var/www/html` согласно шаблону `Caddyfile`. Конфигурация идемпотентна: повторный запуск плейбука не вносит изменений (`changed=0`), что подтверждает корректность роли.
 
 ---
 
@@ -241,5 +403,4 @@ ls: cannot access '/home/karina/test.txt': No such file or directory
         ├── handlers/main.yml
         ├── templates/Caddyfile.j2
         └── files/index.html
-```
 ```
