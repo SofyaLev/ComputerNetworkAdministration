@@ -388,6 +388,9 @@ Caddy успешно установлен и настроен через Ansible
 
 ---
 
+<img width="538" height="301" alt="image" src="https://github.com/user-attachments/assets/6459dbe8-3fc4-4dec-8974-92c2c808b6a4" />
+
+
 ## Приложение. Полный список файлов проекта
 
 ```text
