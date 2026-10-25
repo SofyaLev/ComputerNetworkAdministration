@@ -1,0 +1,40 @@
+// ищем лог-файлы Nextcloud в смонтированной директории
+local.file_match "nextcloud" {
+  path_targets = [{
+    __path__ = "/opt/nc_data/*.log",
+    job      = "nextcloud_logs",
+  }]
+}
+
+// читаем найденные файлы и отправляем строки дальше
+loki.source.file "nextcloud" {
+  targets    = local.file_match.nextcloud.targets
+  forward_to = [loki.process.nextcloud.receiver]
+}
+
+// разбираем JSON-строку: время записи и уровень
+loki.process "nextcloud" {
+  stage.json {
+    expressions = { level = "level", time = "time" }
+  }
+  // время берём из самой записи, а не момент чтения файла
+  stage.timestamp {
+    source = "time"
+    format = "RFC3339"
+  }
+  // Nextcloud пишет уровень числом: 0 debug, 1 info, 2 warning, 3 error, 4 fatal
+  stage.template {
+    source   = "level"
+    template = "{{ if eq .Value \"0\" }}debug{{ else if eq .Value \"1\" }}info{{ else if eq .Value \"2\" }}warning{{ else if eq .Value \"3\" }}error{{ else }}fatal{{ end }}"
+  }
+  stage.labels {
+    values = { level = "" }
+  }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

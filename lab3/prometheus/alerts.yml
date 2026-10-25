@@ -1,0 +1,10 @@
+groups:
+  - name: nextcloud
+    rules:
+      - alert: NextcloudUnhealthy
+        expr: probe_success{job="nextcloud_status"} == 0
+        for: 30s
+        labels:
+          severity: disaster
+        annotations:
+          summary: Nextcloud is in maintenance mode or unavailable

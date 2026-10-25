@@ -1,0 +1,59 @@
+services:
+  nextcloud:
+    image: nextcloud:35.0.2-apache
+    container_name: nextcloud # на это имя завязана проверка в Prometheus
+    environment:
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: admin-password
+    ports:
+      - "8080:80"
+    volumes:
+      - nc-data:/var/www/html/data
+
+  loki: # хранилище логов
+    image: grafana/loki:3.7.9
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml # дефолтный конфиг из образа
+
+  alloy: # сборщик логов, замена Promtail
+    image: grafana/alloy:v1.21.2
+    container_name: alloy
+    ports:
+      - "12345:12345" # веб-интерфейс Alloy
+    volumes:
+      - nc-data:/opt/nc_data:ro # та же директория, что монтируется в Nextcloud
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+
+  blackbox: # проверяет status.php по HTTP
+    image: prom/blackbox-exporter:v0.29.1
+    container_name: blackbox
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml
+
+  prometheus: # хранилище метрик и правила алертов
+    image: prom/prometheus:v3.15.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml
+
+  grafana:
+    image: grafana/grafana:13.2.4
+    container_name: grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  nc-data:
+  grafana-data:

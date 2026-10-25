@@ -1,0 +1,214 @@
+{
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "eg2ay3ph0b7r4f"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Nextcloud is: UNHEALTHY"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Nextcloud is: HEALTHY"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "eg2ay3ph0b7r4f"
+          },
+          "expr": "probe_success{job=\"nextcloud_status\"}",
+          "refId": "A"
+        }
+      ],
+      "title": "Nextcloud status",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "eg2ay3ph0b7r4f"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "id": 2,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "eg2ay3ph0b7r4f"
+          },
+          "expr": "probe_duration_seconds{job=\"nextcloud_status\"}",
+          "legendFormat": "status.php",
+          "refId": "A"
+        }
+      ],
+      "title": "status.php response time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "eg2axzkyh57uoa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "id": 3,
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "eg2axzkyh57uoa"
+          },
+          "expr": "sum by (level) (count_over_time({job=\"nextcloud_logs\"}[$__auto]))",
+          "legendFormat": "level {{level}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Log entries by level",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "eg2axzkyh57uoa"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 4,
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "eg2axzkyh57uoa"
+          },
+          "expr": "{job=\"nextcloud_logs\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Nextcloud logs",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "detected_level": true,
+              "id": true,
+              "labelTypes": true,
+              "labels": true,
+              "tsNs": true
+            },
+            "renameByName": {
+              "Line": "Line"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "title": "Nextcloud",
+  "uid": "nextcloud"
+}
